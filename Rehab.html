@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rehab · Athlete Request System</title>
+    <!-- Supabase JS (fallback to localStorage) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.43.1/dist/umd/supabase.min.js">
+    </script>
+    <!-- Chart.js for reporting -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
+    </script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            background: #f6f3f9;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .app-container {
+            max-width: 1400px;
+            width: 100%;
+            background: rgba(255, 250, 245, 0.7);
+            backdrop-filter: blur(2px);
+            border-radius: 40px;
+            padding: 28px 30px;
+            box-shadow: 0 12px 40px rgba(190, 170, 210, 0.2);
+            border: 1px solid #f0e6f5;
+        }
+        .pastel-bg {
+            background: #f8f0fc;
+        }
+        .pastel-card {
+            background: #ffffffd9;
+            backdrop-filter: blur(4px);
+            border-radius: 28px;
+            padding: 20px 24px;
+            box-shadow: 0 6px 18px rgba(200, 180, 220, 0.2);
+            border: 1px solid #ede4f5;
+        }
+        .pastel-btn {
+            background: #d9c9e8;
+            border: none;
+            color: #3b2b4a;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 60px;
+            transition: 0.2s;
+            cursor: pointer;
+            font-size: 0.95rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .pastel-btn:hover {
+            background: #cbb7df;
+            transform: scale(0.97);
+            box-shadow: 0 4px 10px rgba(180, 150, 210, 0.3);
+        }
+        .pastel-btn-outline {
+            background: transparent;
+            border: 2px solid #d9c9e8;
+            color: #3b2b4a;
+        }
+        .pastel-btn-outline:hover {
+            background: #d9c9e840;
+        }
+        .badge-pastel {
+            background: #e3d4ed;
+            padding: 4px 14px;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #2f1f3f;
+            display: inline-block;
+        }
+        .status-badge {
+            border-radius: 60px;
+            padding: 4px 16px;
+            font-weight: 500;
+            display: inline-block;
+            font-size: 0.75rem;
+        }
+        .status-pending {
+            background: #f9e6b3;
+            color: #6b4f1a;
+        }
+        .status-approved {
+            background: #b8e0c0;
+            color: #1a4f2a;
+        }
+        .status-rejected {
+            background: #f8d0d0;
+            color: #7a2e2e;
+        }
+        .status-more_info {
+            background: #c5d9f0;
+            color: #1e3c5a;
+        }
+        .grid-2col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        @media (max-width: 800px) {
+            .grid-2col {
+                grid-template-columns: 1fr;
+            }
+        }
+        .flex-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            align-items: center;
+        }
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2f2340;
+            margin-bottom: 16px;
+            letter-spacing: -0.3px;
+        }
+        .card-title i {
+            margin-right: 10px;
+            color: #8a72a8;
+        }
+        .login-box {
+            max-width: 420px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        .login-box select,
+        .login-box input {
+            width: 100%;
+            padding: 14px 18px;
+            border-radius: 60px;
+            border: 1px solid #dccde8;
+            background: #fcfaff;
+            margin-bottom: 16px;
+            font-size: 1rem;
+        }
+        .login-box label {
+            font-weight: 500;
+            color: #3d2b4e;
+            margin-left: 8px;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .request-form input,
+        .request-form textarea,
+        .request-form select {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 30px;
+            border: 1px solid #ddd0e5;
+            background: #fcfaff;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+        }
+        .request-form textarea {
+            min-height: 80px;
+            border-radius: 24px;
+            resize: vertical;
+        }
+        .table-wrap {
+            overflow-x: auto;
+            margin-top: 8px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        th {
+            text-align: left;
+            padding: 12px 8px;
+            color: #3d2b4e;
+            font-weight: 600;
+            border-bottom: 2px solid #e4d7ed;
+        }
+        td {
+            padding: 12px 8px;
+            border-bottom: 1px solid #eee6f2;
+            vertical-align: middle;
+        }
+        .clickable-row {
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .clickable-row:hover {
+            background: #f3ebf9;
+        }
+        .notification-banner {
+            background: #e1d4ed;
+            border-radius: 60px;
+            padding: 8px 18px;
+            margin-bottom: 16px;
+            color: #2a1d38;
+            font-weight: 500;
+            transition: 0.3s;
+        }
+        .notification-banner i {
+            margin-right: 12px;
+            color: #6b4e86;
+        }
+        .back-btn {
+            background: transparent;
+            border: none;
+            color: #5b4370;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 60px;
+            transition: 0.2s;
+        }
+        .back-btn:hover {
+            background: #e5d7ef;
+        }
+        .delete-btn {
+            background: #fad4d4;
+            border: none;
+            color: #7f3a3a;
+            padding: 4px 16px;
+            border-radius: 60px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.85rem;
+        }
+        .delete-btn:hover {
+            background: #f5bfbf;
+        }
+        .delete-btn-small {
+            padding: 2px 12px;
+            font-size: 0.75rem;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .mt-4 {
+            margin-top: 20px;
+        }
+        .mb-2 {
+            margin-bottom: 8px;
+        }
+        .gap-2 {
+            gap: 8px;
+        }
+        .chart-container {
+            max-width: 300px;
+            margin: 10px auto;
+        }
+        .request-item {
+            background: #f3ebf9;
+            border-radius: 30px;
+            padding: 10px 16px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .request-info {
+            flex: 1;
+            min-width: 150px;
+        }
+        .request-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .action-select {
+            border-radius: 40px;
+            padding: 4px 12px;
+            border: 1px solid #dccde8;
+            background: #fcfaff;
+            font-size: 0.85rem;
+        }
+        .comment-input {
+            border-radius: 40px;
+            padding: 4px 12px;
+            width: 100px;
+            border: 1px solid #dccde8;
+            background: #fcfaff;
+            font-size: 0.85rem;
+        }
+        .apply-btn {
+            padding: 2px 14px;
+            font-size: 0.8rem;
+        }
+        .stat-box {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px 24px;
+            align-items: center;
+        }
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .stat-item .badge-pastel {
+            font-size: 0.7rem;
+        }
+        .stat-item strong {
+            font-size: 1.2rem;
+            color: #2f2340;
+        }
+        .chart-wrapper {
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px 0;
+        }
+        #chartCanvas {
+            max-height: 70px;
+            width: 100%;
+            max-width: 200px;
+        }
+        .history-box {
+            margin-top: 20px;
+            background: #f5edfa;
+            border-radius: 24px;
+            padding: 14px 18px;
+            display: none;
+        }
+        .history-box.visible {
+            display: block;
+        }
+        .history-box strong {
+            color: #2f2340;
+        }
+        .history-content {
+            font-size: 0.9rem;
+            margin-top: 6px;
+        }
+        .history-content ul {
+            list-style: none;
+            padding: 0;
+        }
+        .history-content ul li {
+            padding: 4px 0;
+            border-bottom: 1px solid #e6daf0;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .history-content ul li:last-child {
+            border-bottom: none;
+        }
+        .submit-feedback {
+            margin-top: 12px;
+            font-weight: 500;
+            color: #3b7a4a;
+            min-height: 24px;
+        }
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 20px;
+            align-items: center;
+        }
+        .filter-bar select {
+            border-radius: 40px;
+            padding: 6px 16px;
+            border: 1px solid #dccde8;
+            background: #fcfaff;
+            font-size: 0.9rem;
+        }
+        .export-btns {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .export-btns .pastel-btn {
+            padding: 4px 16px;
+            font-size: 0.8rem;
+        }
+        @media (max-width: 600px) {
+            .app-container {
+                padding: 16px;
+            }
+            .pastel-card {
+                padding: 16px;
+            }
+            .filter-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .flex-between {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+            .stat-box {
+                gap: 8px 16px;
+            }
+            .chart-wrapper {
+                height: 60px;
+            }
+            #chartCanvas {
+                max-height: 50px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="app-container">
+
+        <!-- LOGIN SCREEN -->
+        <div id="loginScreen" class="pastel-card login-box">
+            <h2 style="text-align:center; color:#3b2b4a;"><i class="fas fa-heartbeat" style="color:#b28fc9;"></i> Rehab Portal</h2>
+            <p style="text-align:center; margin-bottom:20px; color:#625077;">Athlete · Officer · Physio</p>
+            <label><i class="fas fa-user-tag"></i> Role</label>
+            <select id="loginRole">
+                <option value="athlete">Athlete</option>
+                <option value="officer">Sports Officer</option>
+                <option value="physio">Physiotherapist</option>
+            </select>
+            <label><i class="fas fa-envelope"></i> Email</label>
+            <input type="email" id="loginEmail" placeholder="your@email.com" value="athlete@demo.com" />
+            <button id="loginBtn" class="pastel-btn" style="width:100%;justify-content:center;"><i class="fas fa-sign-in-alt"></i> Login</button>
+            <div style="margin-top:18px; font-size:0.8rem; color:#7a6590; text-align:center;">Demo: athlete@demo.com / officer@demo.com / physio@demo.com</div>
+        </div>
+
+        <!-- MAIN DASHBOARD -->
+        <div id="dashboardScreen" class="hidden">
+            <!-- header -->
+            <div class="flex-between" style="margin-bottom:20px;">
+                <div class="flex-row">
+                    <button id="backToLoginBtn" class="back-btn"><i class="fas fa-arrow-left"></i> Back</button>
+                    <h3 style="color:#3d2b4e; margin-left:6px;"><i class="fas fa-clipboard-list" style="color:#a585c1;"></i> Rehab Management</h3>
+                </div>
+                <div class="flex-row">
+                    <span class="badge-pastel"><i class="fas fa-user"></i> <span id="displayRole"></span></span>
+                    <span class="badge-pastel"><i class="fas fa-envelope"></i> <span id="displayEmail"></span></span>
+                </div>
+            </div>
+
+            <!-- NOTIFICATIONS -->
+            <div id="notificationArea" class="notification-banner"><i class="fas fa-bell"></i> <span id="notificationText">Welcome! System ready.</span></div>
+
+            <!-- ATHLETE VIEW: New Request + My Requests -->
+            <div id="athleteView" class="hidden">
+                <div class="grid-2col">
+                    <div class="pastel-card">
+                        <div class="card-title"><i class="fas fa-plus-circle"></i> New Rehabilitation Request</div>
+                        <form id="requestForm" class="request-form">
+                            <input type="text" id="athleteName" placeholder="Athlete Name" value="Demo Athlete" />
+                            <input type="text" id="athleteId" placeholder="Athlete ID" value="A12345" />
+                            <input type="text" id="sportType" placeholder="Sport Type" value="Basketball" />
+                            <textarea id="injuryDesc" placeholder="Injury description">Ankle sprain during training</textarea>
+                            <input type="date" id="injuryDate" value="2026-06-10" />
+                            <input type="text" id="docLink" placeholder="Supporting doc (URL or file name)" value="medical_note.pdf" />
+                            <input type="date" id="prefRehabDate" value="2026-06-25" />
+                            <button type="submit" class="pastel-btn" style="width:100%;justify-content:center;"><i class="fas fa-paper-plane"></i> Submit Request</button>
+                        </form>
+                        <div id="submitFeedback" class="submit-feedback"></div>
+                    </div>
+                    <div class="pastel-card">
+                        <div class="card-title"><i class="fas fa-history"></i> My Requests</div>
+                        <div id="athleteRequestsList"><p style="color:#7f6a94;">No requests yet.</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- OFFICER / PHYSIO VIEW: Dashboard -->
+            <div id="officerView" class="hidden">
+                <div class="pastel-card" style="margin-bottom:20px;">
+                    <div class="filter-bar">
+                        <div><i class="fas fa-filter"></i> Filter:
+                            <select id="statusFilter">
+                                <option value="all">All</option>
+                                <option value="pending">Pending</option>
+                                <option value="approved">Approved</option>
+                                <option value="rejected">Rejected</option>
+                                <option value="more_info">More Info</option>
+                            </select>
+                        </div>
+                        <div class="export-btns">
+                            <button id="exportPdfBtn" class="pastel-btn pastel-btn-outline"><i class="fas fa-file-pdf"></i> PDF</button>
+                            <button id="exportExcelBtn" class="pastel-btn pastel-btn-outline"><i class="fas fa-file-excel"></i> Excel</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- reporting cards -->
+                <div class="grid-2col" style="margin-bottom:20px;">
+                    <div class="pastel-card">
+                        <div class="stat-box">
+                            <div class="stat-item"><span class="badge-pastel">Total</span> <strong id="statTotal">0</strong></div>
+                            <div class="stat-item"><span class="badge-pastel status-approved">Approved</span> <strong id="statApproved">0</strong></div>
+                            <div class="stat-item"><span class="badge-pastel status-rejected">Rejected</span> <strong id="statRejected">0</strong></div>
+                            <div class="stat-item"><span class="badge-pastel status-pending">Pending</span> <strong id="statPending">0</strong></div>
+                        </div>
+                    </div>
+                    <div class="pastel-card">
+                        <div class="chart-wrapper">
+                            <canvas id="chartCanvas" width="200" height="70"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- requests table -->
+                <div class="pastel-card">
+                    <div class="flex-between">
+                        <span class="card-title" style="margin-bottom:0;"><i class="fas fa-list-ul"></i> Requests</span>
+                        <span style="font-size:0.85rem; color:#6b5580;"><i class="fas fa-trash-alt"></i> Select & delete</span>
+                    </div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr><th style="width:40px;">Select</th><th>Athlete</th><th>Sport</th><th>Injury</th><th>Status</th><th style="min-width:220px;">Action</th></tr>
+                            </thead>
+                            <tbody id="requestsTableBody"></tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top:12px; display:flex; gap:12px; flex-wrap:wrap;">
+                        <button id="deleteSelectedBtn" class="delete-btn"><i class="fas fa-trash"></i> Delete selected</button>
+                        <button id="refreshTableBtn" class="pastel-btn pastel-btn-outline" style="padding:4px 16px;"><i class="fas fa-sync-alt"></i> Refresh</button>
+                    </div>
+                    <div id="historyBox" class="history-box">
+                        <strong><i class="fas fa-clock-rotate-left"></i> History & comments</strong>
+                        <div id="historyContent" class="history-content"></div>
+                        <button id="closeHistoryBtn" class="pastel-btn pastel-btn-outline" style="padding:2px 16px; margin-top:8px; font-size:0.8rem;">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ---------- DOM REFS ----------
+            const $ = (s) => document.querySelector(s);
+            const $$ = (s) => document.querySelectorAll(s);
+
+            const loginScreen = $('#loginScreen');
+            const dashboardScreen = $('#dashboardScreen');
+            const loginRole = $('#loginRole');
+            const loginEmail = $('#loginEmail');
+            const loginBtn = $('#loginBtn');
+            const backToLoginBtn = $('#backToLoginBtn');
+            const displayRole = $('#displayRole');
+            const displayEmail = $('#displayEmail');
+            const notificationText = $('#notificationText');
+            const athleteView = $('#athleteView');
+            const officerView = $('#officerView');
+            const athleteRequestsList = $('#athleteRequestsList');
+            const requestForm = $('#requestForm');
+            const submitFeedback = $('#submitFeedback');
+            const requestsTableBody = $('#requestsTableBody');
+            const statusFilter = $('#statusFilter');
+            const statTotal = $('#statTotal');
+            const statApproved = $('#statApproved');
+            const statRejected = $('#statRejected');
+            const statPending = $('#statPending');
+            const historyBox = $('#historyBox');
+            const historyContent = $('#historyContent');
+            const closeHistoryBtn = $('#closeHistoryBtn');
+            const deleteSelectedBtn = $('#deleteSelectedBtn');
+            const refreshTableBtn = $('#refreshTableBtn');
+            const exportPdfBtn = $('#exportPdfBtn');
+            const exportExcelBtn = $('#exportExcelBtn');
+            const chartCanvas = $('#chartCanvas');
+
+            // ---------- STATE ----------
+            let currentUser = { role: 'athlete', email: 'athlete@demo.com' };
+            let requests = [];
+            let selectedIds = new Set();
+            let chartInstance = null;
+
+            // ---------- DATA PERSISTENCE ----------
+            function loadData() {
+                try {
+                    const stored = localStorage.getItem('rehabRequests');
+                    if (stored) {
+                        const parsed = JSON.parse(stored);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            requests = parsed;
+                            return;
+                        }
+                    }
+                } catch (_) { /* ignore */ }
+                // Default sample data
+                requests = [{
+                    id: 'r1',
+                    athleteName: 'Alice Chen',
+                    athleteId: 'A101',
+                    sport: 'Swimming',
+                    injuryDesc: 'Shoulder strain during practice',
+                    injuryDate: '2026-06-01',
+                    docLink: 'mri.pdf',
+                    prefRehabDate: '2026-06-20',
+                    status: 'pending',
+                    reviewerComment: '',
+                    history: [{ action: 'submitted', date: '2026-06-01' }],
+                    athleteEmail: 'alice@demo.com'
+                }, {
+                    id: 'r2',
+                    athleteName: 'Bob Smith',
+                    athleteId: 'A202',
+                    sport: 'Track',
+                    injuryDesc: 'Hamstring pull',
+                    injuryDate: '2026-06-05',
+                    docLink: '',
+                    prefRehabDate: '2026-06-22',
+                    status: 'approved',
+                    reviewerComment: 'Approved by officer',
+                    history: [{ action: 'submitted', date: '2026-06-05' }, { action: 'approved', date: '2026-06-07',
+                        comment: 'Approved by officer' }],
+                    athleteEmail: 'bob@demo.com'
+                }, {
+                    id: 'r3',
+                    athleteName: 'Carla Diaz',
+                    athleteId: 'A303',
+                    sport: 'Gymnastics',
+                    injuryDesc: 'Wrist fracture',
+                    injuryDate: '2026-06-03',
+                    docLink: 'xray.pdf',
+                    prefRehabDate: '2026-06-18',
+                    status: 'more_info',
+                    reviewerComment: 'Please provide latest X-ray',
+                    history: [{ action: 'submitted', date: '2026-06-03' }, { action: 'more_info', date: '2026-06-06',
+                        comment: 'Please provide latest X-ray' }],
+                    athleteEmail: 'carla@demo.com'
+                }, {
+                    id: 'r4',
+                    athleteName: 'Demo Athlete',
+                    athleteId: 'A12345',
+                    sport: 'Basketball',
+                    injuryDesc: 'Ankle sprain during training',
+                    injuryDate: '2026-06-10',
+                    docLink: 'medical_note.pdf',
+                    prefRehabDate: '2026-06-25',
+                    status: 'pending',
+                    reviewerComment: '',
+                    history: [{ action: 'submitted', date: '2026-06-10' }],
+                    athleteEmail: 'athlete@demo.com'
+                }];
+                saveData();
+            }
+
+            function saveData() {
+                try {
+                    localStorage.setItem('rehabRequests', JSON.stringify(requests));
+                } catch (_) { /* ignore */ }
+            }
+
+            // ---------- HELPERS ----------
+            function getStatusBadge(status) {
+                const map = {
+                    pending: 'status-pending',
+                    approved: 'status-approved',
+                    rejected: 'status-rejected',
+                    more_info: 'status-more_info'
+                };
+                const label = status === 'more_info' ? 'MORE INFO' : status.toUpperCase();
+                return `<span class="status-badge ${map[status] || 'status-pending'}">${label}</span>`;
+            }
+
+            function notify(msg, isError) {
+                notificationText.innerText = msg;
+                notificationText.style.color = isError ? '#a14545' : '#2a1d38';
+                clearTimeout(notificationText._timer);
+                notificationText._timer = setTimeout(() => {
+                    notificationText.style.color = '#2a1d38';
+                }, 4000);
+            }
+
+            function generateId() {
+                return 'r' + Date.now() + Math.random().toString(36).slice(2, 6);
+            }
+
+            function today() {
+                return new Date().toISOString().slice(0, 10);
+            }
+
+            // ---------- RENDER: ATHLETE ----------
+            function renderAthleteRequests() {
+                const userEmail = currentUser.email;
+                const myReqs = requests.filter(r => r.athleteEmail === userEmail);
+                if (!myReqs.length) {
+                    athleteRequestsList.innerHTML = '<p style="color:#7f6a94; padding:6px 0;">No requests yet.</p>';
+                    return;
+                }
+                let html = '<ul style="list-style:none; padding:0;">';
+                myReqs.forEach(r => {
+                    const canDelete = r.status === 'pending';
+                    html += `<li class="request-item">
+                        <div class="request-info">
+                            <strong>${r.sport}</strong> — ${r.injuryDesc.length > 35 ? r.injuryDesc.slice(0,35)+'…' : r.injuryDesc}
+                            ${getStatusBadge(r.status)}
+                            ${r.reviewerComment ? '<i class="fas fa-comment" title="'+r.reviewerComment.replace(/"/g,'&quot;')+'"></i>' : ''}
+                        </div>
+                        <div class="request-actions">
+                            ${canDelete ? `<button class="delete-btn delete-btn-small athlete-delete-btn" data-id="${r.id}"><i class="fas fa-trash"></i> Delete</button>` : ''}
+                            <span style="font-size:0.65rem; color:#7f6a94;">#${r.id}</span>
+                        </div>
+                    </li>`;
+                });
+                html += '</ul>';
+                athleteRequestsList.innerHTML = html;
+
+                // Attach delete events
+                $$('.athlete-delete-btn').forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        const id = this.dataset.id;
+                        const req = requests.find(r => r.id === id);
+                        if (!req) return;
+                        if (req.status !== 'pending') {
+                            notify('Only pending requests can be deleted', true);
+                            return;
+                        }
+                        if (confirm(`Delete request "${req.sport}"?`)) {
+                            requests = requests.filter(r => r.id !== id);
+                            saveData();
+                            renderAthleteRequests();
+                            if (!officerView.classList.contains('hidden')) renderOfficerTable();
+                            notify('Request deleted');
+                        }
+                    });
+                });
+            }
+
+            // ---------- RENDER: OFFICER TABLE ----------
+            function renderOfficerTable() {
+                const filter = statusFilter.value;
+                let filtered = requests;
+                if (filter !== 'all') filtered = requests.filter(r => r.status === filter);
+
+                if (!filtered.length) {
+                    requestsTableBody.innerHTML =
+                        `<tr><td colspan="6" style="text-align:center; color:#7f6a94; padding:20px 0;">No requests match filter</td></tr>`;
+                    updateStats();
+                    return;
+                }
+
+                let html = '';
+                filtered.forEach(r => {
+                    const checked = selectedIds.has(r.id) ? 'checked' : '';
+                    const commentVal = r.reviewerComment || '';
+                    html += `<tr class="clickable-row" data-id="${r.id}">
+                        <td><input type="checkbox" class="row-checkbox" data-id="${r.id}" ${checked} /></td>
+                        <td><strong>${r.athleteName}</strong><br><span style="font-size:0.75rem; color:#7f6a94;">${r.athleteId}</span></td>
+                        <td>${r.sport}</td>
+                        <td>${r.injuryDesc.length > 25 ? r.injuryDesc.slice(0,25)+'…' : r.injuryDesc}</td>
+                        <td>${getStatusBadge(r.status)}</td>
+                        <td>
+                            <div style="display:flex; flex-wrap:wrap; gap:4px; align-items:center;">
+                                <select class="action-select" data-id="${r.id}">
+                                    <option value="">Action</option>
+                                    <option value="approve">✅ Approve</option>
+                                    <option value="reject">❌ Reject</option>
+                                    <option value="more_info">ℹ️ More Info</option>
+                                </select>
+                                <input type="text" class="comment-input" placeholder="comment" data-id="${r.id}" value="${commentVal}" />
+                                <button class="pastel-btn apply-btn" data-id="${r.id}" style="padding:2px 12px; font-size:0.75rem;">Apply</button>
+                            </div>
+                        </td>
+                    </tr>`;
+                });
+                requestsTableBody.innerHTML = html;
+                updateStats();
+
+                // Attach checkbox events
+                $$('.row-checkbox').forEach(cb => {
+                    cb.addEventListener('change', function(e) {
+                        const id = this.dataset.id;
+                        if (this.checked) selectedIds.add(id);
+                        else selectedIds.delete(id);
+                    });
+                });
+
+                // Attach apply action events
+                $$('.apply-btn').forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        const id = this.dataset.id;
+                        const select = document.querySelector(`.action-select[data-id="${id}"]`);
+                        const commentInput = document.querySelector(`.comment-input[data-id="${id}"]`);
+                        if (!select) return;
+                        const action = select.value;
+                        const comment = commentInput ? commentInput.value.trim() : '';
+                        if (!action) { notify('Select an action first', true); return; }
+                        applyAction(id, action, comment);
+                    });
+                });
+
+                // Attach row click for history
+                $$('.clickable-row').forEach(row => {
+                    row.addEventListener('click', function(e) {
+                        // Ignore clicks on interactive elements inside the row
+                        const tag = e.target.tagName.toLowerCase();
+                        if (tag === 'input' || tag === 'select' || tag === 'button') return;
+                        const id = this.dataset.id;
+                        if (id) showHistory(id);
+                    });
+                });
+            }
+
+            // ---------- APPLY ACTION ----------
+            function applyAction(id, action, comment) {
+                const req = requests.find(r => r.id === id);
+                if (!req) { notify('Request not found', true); return; }
+
+                let newStatus = req.status;
+                if (action === 'approve') newStatus = 'approved';
+                else if (action === 'reject') newStatus = 'rejected';
+                else if (action === 'more_info') newStatus = 'more_info';
+                else { notify('Invalid action', true); return; }
+
+                // Only update if status changes
+                if (newStatus === req.status && !comment) {
+                    notify('No change applied', true);
+                    return;
+                }
+
+                req.status = newStatus;
+                if (comment) req.reviewerComment = comment;
+                else if (action === 'approve' && !req.reviewerComment) req.reviewerComment = 'Approved';
+                else if (action === 'reject' && !req.reviewerComment) req.reviewerComment = 'Rejected';
+
+                if (!req.history) req.history = [];
+                req.history.push({
+                    action: newStatus,
+                    date: today(),
+                    comment: comment || (action === 'approve' ? 'Approved' : action === 'reject' ? 'Rejected' :
+                        'More info requested')
+                });
+
+                saveData();
+                renderOfficerTable();
+                renderAthleteRequests();
+                notify(`Request #${req.id} → ${newStatus.toUpperCase()}`);
+            }
+
+            // ---------- SHOW HISTORY ----------
+            function showHistory(id) {
+                const req = requests.find(r => r.id === id);
+                if (!req) { notify('Request not found', true); return; }
+
+                historyBox.classList.add('visible');
+                let html = `<div style="margin-bottom:8px;"><strong>${req.athleteName}</strong> (${req.sport}) — ${getStatusBadge(req.status)}`;
+                if (req.reviewerComment) html += ` <span style="font-size:0.85rem; color:#5b4370;"><i class="fas fa-comment"></i> ${req.reviewerComment}</span>`;
+                html += `</div>`;
+
+                if (req.history && req.history.length > 0) {
+                    html += '<ul>';
+                    req.history.forEach(h => {
+                        const actionLabel = h.action === 'submitted' ? '📝 Submitted' :
+                            h.action === 'approved' ? '✅ Approved' :
+                            h.action === 'rejected' ? '❌ Rejected' :
+                            h.action === 'more_info' ? 'ℹ️ More Info' : h.action;
+                        const commentPart = h.comment ? ` — ${h.comment}` : '';
+                        html += `<li><span style="font-weight:500;">${h.date}</span> ${actionLabel}${commentPart}</li>`;
+                    });
+                    html += '</ul>';
+                } else {
+                    html += '<p style="color:#7f6a94; margin-top:4px;">No history recorded.</p>';
+                }
+                historyContent.innerHTML = html;
+            }
+
+            // ---------- UPDATE STATS & CHART ----------
+            function updateStats() {
+                const total = requests.length;
+                const approved = requests.filter(r => r.status === 'approved').length;
+                const rejected = requests.filter(r => r.status === 'rejected').length;
+                const pending = requests.filter(r => r.status === 'pending' || r.status === 'more_info').length;
+
+                statTotal.innerText = total;
+                statApproved.innerText = approved;
+                statRejected.innerText = rejected;
+                statPending.innerText = pending;
+
+                // Chart
+                try {
+                    if (chartInstance) {
+                        chartInstance.destroy();
+                        chartInstance = null;
+                    }
+                    const ctx = chartCanvas.getContext('2d');
+                    chartInstance = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Approved', 'Rejected', 'Pending'],
+                            datasets: [{
+                                data: [approved, rejected, pending],
+                                backgroundColor: ['#b8e0c0', '#f8d0d0', '#f9e6b3'],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: { callbacks: { label: function(ctx) { return ctx.label + ': ' +
+                                            ctx.parsed; } } }
+                            },
+                            cutout: '60%'
+                        }
+                    });
+                } catch (e) {
+                    // Chart.js might not load, silently fail
+                    console.warn('Chart render skipped:', e.message);
+                }
+            }
+
+            // ---------- DELETE SELECTED ----------
+            function deleteSelected() {
+                if (selectedIds.size === 0) { notify('Select at least one request', true); return; }
+                if (!confirm('Delete selected requests?')) return;
+                requests = requests.filter(r => !selectedIds.has(r.id));
+                selectedIds.clear();
+                saveData();
+                renderOfficerTable();
+                renderAthleteRequests();
+                notify('Deleted selected requests');
+            }
+
+            // ---------- EXPORT ----------
+            function exportReport(type) {
+                if (!requests.length) { notify('No data to export', true); return; }
+                let lines = ['ID,Athlete,ID,Sport,Injury,Status,Comment,Date'];
+                requests.forEach(r => {
+                    const date = r.injuryDate || r.history?.[0]?.date || '';
+                    lines.push(
+                        `${r.id},${r.athleteName},${r.athleteId},${r.sport},"${r.injuryDesc.replace(/"/g,'""')}",${r.status},"${(r.reviewerComment||'').replace(/"/g,'""')}",${date}`
+                        );
+                });
+                const csv = lines.join('\n');
+                const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `rehab_report_${today()}.${type === 'pdf' ? 'csv' : 'csv'}`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 5000);
+                notify(`Report exported as CSV`);
+            }
+
+            // ---------- AUTH ----------
+            function login() {
+                const role = loginRole.value;
+                const email = loginEmail.value.trim();
+                if (!email) { notify('Please enter an email', true); return; }
+                if (!email.includes('@')) { notify('Enter a valid email', true); return; }
+
+                currentUser.role = role;
+                currentUser.email = email;
+                displayRole.innerText = role;
+                displayEmail.innerText = email;
+
+                loginScreen.classList.add('hidden');
+                dashboardScreen.classList.remove('hidden');
+
+                if (role === 'athlete') {
+                    athleteView.classList.remove('hidden');
+                    officerView.classList.add('hidden');
+                    // Pre-fill form
+                    const name = email.split('@')[0] || 'Athlete';
+                    $('#athleteName').value = name.charAt(0).toUpperCase() + name.slice(1);
+                    $('#athleteId').value = 'A' + Math.floor(Math.random() * 9000 + 1000);
+                    renderAthleteRequests();
+                } else {
+                    athleteView.classList.add('hidden');
+                    officerView.classList.remove('hidden');
+                    renderOfficerTable();
+                }
+                notify(`Logged in as ${role} (${email})`);
+            }
+
+            function logout() {
+                loginScreen.classList.remove('hidden');
+                dashboardScreen.classList.add('hidden');
+                selectedIds.clear();
+                historyBox.classList.remove('visible');
+                notify('Logged out');
+            }
+
+            // ---------- EVENT BINDINGS ----------
+            loginBtn.addEventListener('click', login);
+            loginEmail.addEventListener('keydown', (e) => { if (e.key === 'Enter') login(); });
+            loginRole.addEventListener('keydown', (e) => { if (e.key === 'Enter') login(); });
+
+            backToLoginBtn.addEventListener('click', logout);
+
+            // Submit request
+            requestForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (currentUser.role !== 'athlete') { notify('Only athletes can submit', true); return; }
+
+                const newReq = {
+                    id: generateId(),
+                    athleteName: $('#athleteName').value.trim() || 'Unknown',
+                    athleteId: $('#athleteId').value.trim() || 'N/A',
+                    sport: $('#sportType').value.trim() || 'General',
+                    injuryDesc: $('#injuryDesc').value.trim() || 'No description',
+                    injuryDate: $('#injuryDate').value || today(),
+                    docLink: $('#docLink').value.trim() || '',
+                    prefRehabDate: $('#prefRehabDate').value || '',
+                    status: 'pending',
+                    reviewerComment: '',
+                    history: [{ action: 'submitted', date: today() }],
+                    athleteEmail: currentUser.email
+                };
+                requests.push(newReq);
+                saveData();
+                renderAthleteRequests();
+                submitFeedback.innerText = '✔ Request submitted!';
+                setTimeout(() => submitFeedback.innerText = '', 3500);
+                notify('Request submitted!');
+                // Clear some fields but keep helpful ones
+                $('#injuryDesc').value = '';
+                $('#docLink').value = '';
+            });
+
+            // Filter
+            statusFilter.addEventListener('change', renderOfficerTable);
+
+            // Delete selected
+            deleteSelectedBtn.addEventListener('click', deleteSelected);
+
+            // Refresh
+            refreshTableBtn.addEventListener('click', function() {
+                renderOfficerTable();
+                notify('Table refreshed');
+            });
+
+            // Close history
+            closeHistoryBtn.addEventListener('click', function() {
+                historyBox.classList.remove('visible');
+            });
+
+            // Export
+            exportPdfBtn.addEventListener('click', () => exportReport('pdf'));
+            exportExcelBtn.addEventListener('click', () => exportReport('excel'));
+
+            // ---------- KEYBOARD SHORTCUTS ----------
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    if (historyBox.classList.contains('visible')) {
+                        historyBox.classList.remove('visible');
+                    }
+                }
+            });
+
+            // ---------- INIT ----------
+            loadData();
+
+            // Pre-fill login
+            loginRole.value = 'athlete';
+            loginEmail.value = 'athlete@demo.com';
+
+            // Pre-fill athlete form
+            $('#athleteName').value = 'Demo Athlete';
+            $('#athleteId').value = 'A12345';
+            $('#sportType').value = 'Basketball';
+            $('#injuryDate').value = '2026-06-10';
+            $('#prefRehabDate').value = '2026-06-25';
+
+            // Initial render for athlete view (shown after login)
+            renderAthleteRequests();
+
+            // Auto-login for demo (optional — comment out if you prefer manual)
+            // login();
+
+            console.log('🏥 Rehab System ready. localStorage fallback active.');
+        })();
+    </script>
+</body>
+</html>
